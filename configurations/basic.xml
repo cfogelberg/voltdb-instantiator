@@ -1,0 +1,9 @@
+<deployment>
+  <cluster hostcount="1" sitesperhost="1" kfactor="0" />
+  <commandlog enabled="false" />
+  <consistency readlevel="safe" />
+  <httpd enabled="true">
+    <jsonapi enabled="true" />
+  </httpd>
+  <snapshot enabled="false" />
+</deployment>

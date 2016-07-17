@@ -1,0 +1,140 @@
+#!/usr/bin/python
+
+import os
+import sys
+import yaml
+import itertools
+import time
+import shutil
+
+def validate_command_line_arguments(args):
+  '''
+  Check that only one command line argument is present and that it specifies a valid path. Raise an exception otherwise
+  '''
+  if len(args) != 2:
+    raise Exception('Error - incorrect number of arguments: 1 expected, ' + str(len(args) - 1) + ' present')
+  if not os.path.isdir(args[1]):
+    raise Exception('Error - path not found: ' + args[1])
+  if not os.path.isfile(os.path.join(args[1], 'deployment.xml')):
+    raise Exception('Error - deployment.xml not found: ' + os.path.join(args[1], 'deployment.xml'))
+  if not os.path.isfile(os.path.join(args[1], 'other-configuration.yaml')):
+    raise Exception('Error - other-configuration.yaml not found: ' + os.path.join(args[1], 'other-configuration.yaml'))
+
+def load_configuration(dir_path):
+  '''
+  Loads the other configuration from {dir_path}/other-configuration.yaml, returning a dict
+  '''
+  configuration_path = os.path.join(dir_path, 'other-configuration.yaml')
+  with open(configuration_path, 'r') as configure_yaml:
+    configuration = yaml.load(configure_yaml)
+    if not os.path.exists(configuration['voltdb_bindir']):
+      raise Exception('Could not find VoltDB bin dir specified: ' + configuration['voltdb_bindir'])
+    return configuration
+
+def check_thp_disabled():
+  '''
+  Check that transparent huge pages are disabled (Volt won't start if they aren't)
+  '''
+  enabled_cmd = 'grep \'\\[never\\]\' /sys/kernel/mm/transparent_hugepage/enabled > /dev/null'
+  defrag_cmd = 'grep \'\\[never\\]\' /sys/kernel/mm/transparent_hugepage/defrag > /dev/null'
+  if __shexec(enabled_cmd, True) != 0 or __shexec(defrag_cmd, True) != 0:
+    print('Error - THP must be disabled for VoltDB to safely, try running the following commands:')
+    print('  sudo bash -c "echo never > /sys/kernel/mm/transparent_hugepage/enabled"')
+    print('  sudo bash -c "echo never > /sys/kernel/mm/transparent_hugepage/defrag"')
+    raise Exception('Error - THP must be disabled for VoltDB to safely execute, see suggested commands printed above')
+
+
+def kill_db(dir_path):
+  __shexec('pkill -f ' + os.path.join(dir_path, 'deployment.xml'));
+
+def clear_db_folder(dir_path):
+  '''
+  Removes all DB files from the specified DB folder
+  '''
+  if os.path.exists(os.path.join(dir_path, 'log')):
+    shutil.rmtree(os.path.join(dir_path, 'log'))
+  if os.path.exists(os.path.join(dir_path, 'voltdbroot')):
+    shutil.rmtree(os.path.join(dir_path, 'voltdbroot'))
+
+
+def start_db_creation(dir_path, other_configuration):
+  '''
+  Call voltdb create with the appropriate parameters
+  '''
+  print('nohup create DB specifying ports, deployment.xml file, host')
+  mkdir_cmd = 'mkdir -p {dir_path}/log' \
+      .replace('{dir_path}', dir_path) \
+      .strip()
+
+  prefix = 'nohup env'
+  heap = 'VOLTDB_HEAPMAX=\'{heap}\'' \
+    .replace('{heap}', str(other_configuration['voltdb_heapmax'])) \
+    .strip()
+  opts = 'VOLTDB_OPTS=\'-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address={debug}\'' \
+    .replace('{debug}', str(other_configuration['ports']['debug'])) \
+    .strip()
+  binary = os.path.join(other_configuration['voltdb_bindir'], 'voltdb create')
+  depl = '--deployment=' + os.path.join(dir_path, 'deployment.xml')
+  host = '--host=' + other_configuration['host']
+  admin = '--admin=' + str(other_configuration['ports']['admin'])
+  client = '--client=' + str(other_configuration['ports']['client'])
+  http = '--http=' + str(other_configuration['ports']['http'])
+  internal = '--internal=' + str(other_configuration['ports']['internal'])
+  repl = '--replication=' + str(other_configuration['ports']['replication'])
+  zoo = '--zookeeper=' + str(other_configuration['ports']['zookeeper'])
+  suffix = '>> {dir_path}/log/createclean.log 2>&1 &' \
+    .replace('{dir_path}', dir_path) \
+    .strip()
+
+  db_cmd = '{prefix} {heap} {opts} {binary} {depl} {host} {admin} {client} {http} {internal} {repl} {zoo} {suffix}' \
+      .replace('{prefix}', prefix) \
+      .replace('{heap}', heap) \
+      .replace('{opts}', opts) \
+      .replace('{binary}', binary) \
+      .replace('{depl}', depl) \
+      .replace('{host}', host) \
+      .replace('{admin}', admin) \
+      .replace('{client}', client) \
+      .replace('{http}', http) \
+      .replace('{internal}', internal) \
+      .replace('{repl}', repl) \
+      .replace('{zoo}', zoo) \
+      .replace('{suffix}', suffix) \
+      .strip()
+  os.chdir(dir_path)
+  __shexec(mkdir_cmd)
+  __shexec(db_cmd)
+
+def wait_for_database_to_start(dir_path, delay):
+  '''
+  Check the log 10 times whether or not it contains "Server completed initialization", waiting {delay} seconds
+  before the first check and between each check
+  '''
+  grep_cmd = 'grep \'Server completed initialization\' {dir_path}/log/volt.log > /dev/null' \
+    .replace('{dir_path}', dir_path) \
+    .strip()
+  for _ in itertools.repeat(None, 10):
+    print 'Checking if initialisation has completed...'
+    time.sleep(delay)
+    if __shexec(grep_cmd, True) == 0:
+      print '... Server initialization completed'
+      return True
+  print(' ... Server initialization does not appear to have completed - check {dir_path}/log/volt.log') \
+    .replace('{dir_path}', dir_path) \
+    .strip()
+  return False
+
+def __shexec(command, silent=False):
+  if not silent:
+    print(command)
+  return os.system(command)
+
+if __name__ == '__main__':
+  validate_command_line_arguments(sys.argv)
+  other_configuration = load_configuration(sys.argv[1])
+  check_thp_disabled()
+  kill_db(sys.argv[1])
+  clear_db_folder(sys.argv[1])
+  start_db_creation(sys.argv[1], other_configuration)
+  wait_for_database_to_start(sys.argv[1], other_configuration['check_delay'])
+

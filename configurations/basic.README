@@ -1,0 +1,3 @@
+# README
+
+`basic.xml` specifies a simple, single-host, single-partition non-persisted VoltDB database that can be instantiated using the Community Edition.

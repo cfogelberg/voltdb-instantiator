@@ -1,0 +1,13 @@
+---
+host: localhost
+ports:
+  admin: 21211
+  client: 21212
+  http: 21213
+  internal: 21214
+  replication: 21215
+  zookeeper: 21216
+  debug: 21217
+voltdb_heapmax: 1024
+voltdb_bindir: /path/to/voltdb/bin
+check_delay: 5

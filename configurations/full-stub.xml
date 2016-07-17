@@ -1,0 +1,53 @@
+<deployment>
+  <admin-mode port="" />
+  <cluster hostcount="" sitesperhost="" kfactor="" />
+  <commandlog enabled="" synchronous="" logsize="">
+    <frequency time="" transactions="" />
+  </commandlog>
+  <consistency readlevel="" />
+  <dr id="" listen="" port="">
+    <connection source="" />
+  </dr>
+  <export>
+    <configuration enabled="" target="" type="" exportconnectorclass="">
+      <property name="" />
+    </configuration>
+  </export>
+  <heartbeat timeout="" />
+  <httpd port="" enabled="">
+    <jsonapi enabled="" />
+    <https enabled="">
+      <keystore path="" password="" />
+      <truststore path="" password="" />
+    </https>
+  </httpd>
+  <import>
+    <configuration enabled="" module="" format="" type"" />
+  </import>
+  <partition-detection enabled="" />
+  <paths>
+    <commandlog path="" />
+    <commandlogsnapshot path="" />
+    <droverflow path="" />
+    <exportoverflow path="" />
+    <snapshots path="" />
+    <voltdbroot path="" />
+  </paths>
+  <security enabled="" provider="" />
+  <snapshot frequency="" prefix="" retain="" enabled="" />
+  <systemsettings>
+    <elastic duration="" throughput="" />
+    <query timeout="" />
+    <resourcemonitor frequency="">
+      <disklimit>
+        <feature name="" size="" />
+      </disklimit>
+      <memorylimit size="" />
+    </resourcemonitor>
+    <snapshot priority="" />
+    <temptables maxsize="" />
+  </systemsettings>
+  <users>
+    <user name="" password="" roles="" />
+  </users>
+</deployment>

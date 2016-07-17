@@ -1,0 +1,3 @@
+# README
+
+`full-stub.xml` is not a valid VoltDB deployment XML file; all of the attribute values are specified as empty strings. A valid deployment.xml file can be created from this by completing attribute values, duplicating child attributes as necessary (e.g. one `<user>` element for each user) and removing empty and irrelevant attributes.
