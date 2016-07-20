@@ -19,6 +19,7 @@ def validate_command_line_arguments(args):
     raise Exception('Error - deployment.xml not found: ' + os.path.join(args[1], 'deployment.xml'))
   if not os.path.isfile(os.path.join(args[1], 'other-configuration.yaml')):
     raise Exception('Error - other-configuration.yaml not found: ' + os.path.join(args[1], 'other-configuration.yaml'))
+  print('Command line arguments validated')
 
 def load_configuration(dir_path):
   '''
@@ -29,6 +30,7 @@ def load_configuration(dir_path):
     configuration = yaml.load(configure_yaml)
     if not os.path.exists(configuration['voltdb_bindir']):
       raise Exception('Could not find VoltDB bin dir specified: ' + configuration['voltdb_bindir'])
+    print('Other configuration loaded')
     return configuration
 
 def check_thp_disabled():
@@ -42,10 +44,13 @@ def check_thp_disabled():
     print('  sudo bash -c "echo never > /sys/kernel/mm/transparent_hugepage/enabled"')
     print('  sudo bash -c "echo never > /sys/kernel/mm/transparent_hugepage/defrag"')
     raise Exception('Error - THP must be disabled for VoltDB to safely execute, see suggested commands printed above')
+  print('Checked transparent huge pages are disabled')
 
 
 def kill_db(dir_path):
-  __shexec('pkill -f ' + os.path.join(dir_path, 'deployment.xml'));
+  deployment_filepath = os.path.join(dir_path, 'deployment.xml')
+  __shexec('pkill -f ' + deployment_filepath);
+  print('Existing DB, if any, using ' + deployment_filepath + ' killed');
 
 def clear_db_folder(dir_path):
   '''
@@ -55,6 +60,7 @@ def clear_db_folder(dir_path):
     shutil.rmtree(os.path.join(dir_path, 'log'))
   if os.path.exists(os.path.join(dir_path, 'voltdbroot')):
     shutil.rmtree(os.path.join(dir_path, 'voltdbroot'))
+  print('log and voltdbroot directories removed from ' + dir_path + ' if present')
 
 
 def start_db_creation(dir_path, other_configuration):
@@ -104,6 +110,7 @@ def start_db_creation(dir_path, other_configuration):
   os.chdir(dir_path)
   __shexec(mkdir_cmd)
   __shexec(db_cmd)
+  print('DB startup initiated')
 
 def wait_for_database_to_start(dir_path, delay):
   '''
@@ -122,6 +129,7 @@ def wait_for_database_to_start(dir_path, delay):
   print(' ... Server initialization does not appear to have completed - check {dir_path}/log/volt.log') \
     .replace('{dir_path}', dir_path) \
     .strip()
+  print('WARNING: DB does not appear to have started after ' + str(10 * delay) + ' seconds - please check the logs')
   return False
 
 def __shexec(command, silent=False):
