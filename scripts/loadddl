@@ -1,0 +1,73 @@
+#!/usr/bin/python
+
+import os
+import sys
+import yaml
+import shutil
+
+def validate_command_line_arguments(args):
+  '''
+  Check that 2 command line arguments are present and that they both specify valid paths. Raise an exception otherwise
+  '''
+  if len(args) != 3:
+    raise Exception('Error - incorrect number of arguments: 2 expected, ' + str(len(args) - 1) + ' present')
+  if not os.path.isdir(args[1]):
+    raise Exception('Error - path not found: ' + args[1])
+  if not os.path.isfile(os.path.join(args[1], 'deployment.xml')):
+    raise Exception('Error - deployment.xml not found: ' + os.path.join(args[1], 'deployment.xml'))
+  if not os.path.isfile(os.path.join(args[1], 'other-configuration.yaml')):
+    raise Exception('Error - other-configuration.yaml not found: ' + os.path.join(args[1], 'other-configuration.yaml'))
+  if not os.path.isfile(args[2]):
+    raise Exception('Error - could not find source file: ' + args[2])
+  print('Command line arguments validated')
+
+def load_configuration(dir_path):
+  '''
+  Loads the other configuration from {dir_path}/other-configuration.yaml, returning a dict
+  '''
+  configuration_path = os.path.join(dir_path, 'other-configuration.yaml')
+  with open(configuration_path, 'r') as configure_yaml:
+    configuration = yaml.load(configure_yaml)
+    if not os.path.exists(configuration['voltdb_bindir']):
+      raise Exception('Could not find VoltDB bin dir specified: ' + configuration['voltdb_bindir'])
+    print('Other configuration loaded')
+    return configuration
+
+def check_voltdb_is_running(other_configuration):
+  '''
+  Attempt to execute a system stored procedure on the VoltDB using the port specified in the YAML configuration file via
+  sqlcmd. Raise an exception if the sqlcmd return code is non-zero.
+  '''
+  check_cmd = 'echo "exec @SystemInformation OVERVIEW" | sqlcmd --port={client} > /dev/null' \
+      .replace('{client}', str(other_configuration['ports']['client'])) \
+      .strip()
+  if __shexec(check_cmd) == 0:
+    print('VoltDB appears to be running normally')
+  else:
+    raise Exception('Error, unable to connect to VoltDB client port')
+
+def apply_sql_file_from_source(source_path, other_configuration):
+  '''
+  Applies a SQL file to a VoltDB via sqlcmd
+  '''
+  apply_cmd = 'sqlcmd --port={client} < "{source_path}" > /dev/null' \
+      .replace('{client}', str(other_configuration['ports']['client'])) \
+      .replace('{source_path}', source_path) \
+      .strip()
+  return_code = __shexec(apply_cmd)
+  if return_code == 0:
+    print('Applied ' + source_path + ' to VoltDB')
+  else:
+    raise Exception('Error - could not apply ' + source_path + ' to VoltDB. Error code: ' + str(return_code))
+
+def __shexec(command, silent=False):
+  if not silent:
+    print(command)
+  return os.system(command)
+
+if __name__ == '__main__':
+  validate_command_line_arguments(sys.argv)
+  other_configuration = load_configuration(sys.argv[1])
+  check_voltdb_is_running(other_configuration)
+  apply_sql_file_from_source(sys.argv[2], other_configuration)
+
