@@ -49,7 +49,10 @@ def check_thp_disabled():
 
 def kill_db(dir_path):
   deployment_filepath = os.path.join(dir_path, 'deployment.xml')
-  __shexec('pkill -f ' + deployment_filepath);
+  kill_cmd = 'pkill -f ' + deployment_filepath + ' >> {dir_path}/log/createclean.log 2>&1' \
+      .replace('{dir_path}', dir_path) \
+      .strip()
+  __shexec(kill_cmd)
   print('Existing DB, if any, using ' + deployment_filepath + ' killed');
 
 def clear_db_folder(dir_path):
@@ -62,12 +65,10 @@ def clear_db_folder(dir_path):
     shutil.rmtree(os.path.join(dir_path, 'voltdbroot'))
   print('log and voltdbroot directories removed from ' + dir_path + ' if present')
 
-
 def start_db_creation(dir_path, other_configuration):
   '''
   Call voltdb create with the appropriate parameters
   '''
-  print('nohup create DB specifying ports, deployment.xml file, host')
   mkdir_cmd = 'mkdir -p {dir_path}/log' \
       .replace('{dir_path}', dir_path) \
       .strip()
@@ -126,10 +127,10 @@ def wait_for_database_to_start(dir_path, delay):
     if __shexec(grep_cmd, True) == 0:
       print '... Server initialization completed'
       return True
-  print(' ... Server initialization does not appear to have completed - check {dir_path}/log/volt.log') \
-    .replace('{dir_path}', dir_path) \
-    .strip()
-  print('WARNING: DB does not appear to have started after ' + str(10 * delay) + ' seconds - please check the logs')
+  print(' ... WARNING: DB initialisation does not appear to have completed after ' + str(10 * delay) + ' seconds')
+  print(' ... Please check the {dir_path}/log/volt.log') \
+      .replace('{dir_path}', dir_path) \
+      .strip()
   return False
 
 def __shexec(command, silent=False):
