@@ -118,8 +118,9 @@ def wait_for_database_to_start(dir_path, delay):
   Check the log 10 times whether or not it contains "Server completed initialization", waiting {delay} seconds
   before the first check and between each check
   '''
-  grep_cmd = 'grep \'Server completed initialization\' {dir_path}/log/volt.log > /dev/null' \
-    .replace('{dir_path}', dir_path) \
+  log_filepath = os.path.join(dir_path, 'log', 'volt.log')
+  grep_cmd = 'grep \'Server completed initialization\' {log_filepath} > /dev/null' \
+    .replace('{log_filepath}', log_filepath) \
     .strip()
   for _ in itertools.repeat(None, 10):
     print 'Checking if initialisation has completed...'
@@ -128,8 +129,8 @@ def wait_for_database_to_start(dir_path, delay):
       print '... Server initialization completed'
       return True
   print(' ... WARNING: DB initialisation does not appear to have completed after ' + str(10 * delay) + ' seconds')
-  print(' ... Please check the {dir_path}/log/volt.log') \
-      .replace('{dir_path}', dir_path) \
+  print(' ... Please check the {log_filepath') \
+      .replace('{log_filepath}', log_filepath) \
       .strip()
   return False
 
