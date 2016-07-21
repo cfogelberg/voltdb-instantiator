@@ -1,9 +1,12 @@
 #!/usr/bin/python
 
+import fnmatch
 import os
 import sys
-import yaml
 import shutil
+import tempfile
+import yaml
+import zipfile
 
 def validate_command_line_arguments(args):
   '''
@@ -19,6 +22,9 @@ def validate_command_line_arguments(args):
     raise Exception('Error - other-configuration.yaml not found: ' + os.path.join(args[1], 'other-configuration.yaml'))
   if not os.path.isfile(args[2]):
     raise Exception('Error - could not find source file: ' + args[2])
+  (_, ext) = os.path.splitext(args[2])
+  if not ext.lower() in ['.zip', '.jar', '.sql']:
+    raise Exception('Error - source file must be a sql, jar or zip file')
   print('Command line arguments validated')
 
 def load_configuration(dir_path):
@@ -33,32 +39,69 @@ def load_configuration(dir_path):
     print('Other configuration loaded')
     return configuration
 
-def check_voltdb_is_running(other_configuration):
+def check_voltdb_is_running(dir_path, other_configuration):
   '''
   Attempt to execute a system stored procedure on the VoltDB using the port specified in the YAML configuration file via
   sqlcmd. Raise an exception if the sqlcmd return code is non-zero.
   '''
-  check_cmd = 'echo "exec @SystemInformation OVERVIEW" | sqlcmd --port={client} > /dev/null' \
+  check_cmd = 'echo "exec @SystemInformation OVERVIEW" | sqlcmd --port={client} >> {dir_path}/log/loadddl.log' \
       .replace('{client}', str(other_configuration['ports']['client'])) \
+      .replace('{dir_path}', dir_path) \
       .strip()
+  os.chdir(dir_path)
   if __shexec(check_cmd) == 0:
     print('VoltDB appears to be running normally')
   else:
     raise Exception('Error, unable to connect to VoltDB client port')
 
-def apply_sql_file_from_source(source_path, other_configuration):
+def apply_source_file(dir_path, source_filepath, other_configuration):
   '''
-  Applies a SQL file to a VoltDB via sqlcmd
+  Applies a SQL file to a VoltDB via sqlcmd. If a jar or zip file is provided instead it will extract any SQL files
+  from that jar file and process them one by one, in alphabetic order
   '''
-  apply_cmd = 'sqlcmd --port={client} < "{source_path}" > /dev/null' \
+  (_, ext) = os.path.splitext(source_filepath)
+  if ext.lower() in ['.sql']:
+    __apply_sql_source_filepath(dir_path, source_filepath, other_configuration)
+  elif ext.lower() in ['.zip', '.jar']:
+    __apply_jarzip_source_filepath(dir_path, source_filepath, other_configuration)
+  else:
+    raise Exception('Error - source file must be a sql, jar or zip file')
+
+def __apply_jarzip_source_filepath(dir_path, source_filepath, other_configuration):
+  sql_files = []
+  tmpdirname = tempfile.mkdtemp()
+  with zipfile.ZipFile(source_filepath, 'r') as source_archive:
+    source_archive.extractall(tmpdirname)
+    for sql_file in __locate("*.[sS][qQ][lL]", tmpdirname):
+      sql_files.append(sql_file)
+    sql_files.sort()
+  if len(sql_files) == 0:
+    raise Exception('No SQL files found in ' + source_filepath)
+  else:
+    for sql_file in sql_files:
+      __apply_sql_source_filepath(dir_path, sql_file, other_configuration)
+
+def __apply_sql_source_filepath(dir_path, source_filepath, other_configuration):
+  apply_cmd = 'sqlcmd --port={client} < "{source_filepath}" >> {dir_path}/log/loadddl.log 2>&1' \
+      .replace('{dir_path}', dir_path) \
       .replace('{client}', str(other_configuration['ports']['client'])) \
-      .replace('{source_path}', source_path) \
+      .replace('{source_filepath}', source_filepath) \
       .strip()
+  os.chdir(dir_path)
   return_code = __shexec(apply_cmd)
   if return_code == 0:
-    print('Applied ' + source_path + ' to VoltDB')
+    print('Applied ' + source_filepath + ' to VoltDB')
   else:
-    raise Exception('Error - could not apply ' + source_path + ' to VoltDB. Error code: ' + str(return_code))
+    raise Exception('Error - could not apply ' + source_filepath + ' to VoltDB. Error code: ' + str(return_code))
+
+def __locate(pattern, root=os.curdir):
+    '''
+    Locate all files matching supplied filename pattern in and below supplied root directory.
+    Source: https://code.activestate.com/recipes/499305-locating-files-throughout-a-directory-tree/
+    '''
+    for path, dirs, files in os.walk(os.path.abspath(root)):
+        for filename in fnmatch.filter(files, pattern):
+            yield os.path.join(path, filename)
 
 def __shexec(command, silent=False):
   if not silent:
@@ -68,6 +111,6 @@ def __shexec(command, silent=False):
 if __name__ == '__main__':
   validate_command_line_arguments(sys.argv)
   other_configuration = load_configuration(sys.argv[1])
-  check_voltdb_is_running(other_configuration)
-  apply_sql_file_from_source(sys.argv[2], other_configuration)
+  check_voltdb_is_running(sys.argv[1], other_configuration)
+  apply_source_file(sys.argv[1], sys.argv[2], other_configuration)
 
