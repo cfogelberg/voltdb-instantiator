@@ -23,11 +23,15 @@ This functionality is implemented by the `createclean` script. Any existing DB i
 
 This functionality is implemented by the `loadddl` script. Following these steps will load a SQL file into the database:
 
-1. Run `scripts/loadddl ~/my-temp-db /path/to/sql/file`
+- Run `scripts/loadddl ~/my-temp-db /path/to/sql/file`
+
+OR
+
+- Run `scripts/loadddl ~/my-temp-db /path/to/jar/or/zip/archive/file`
 
 If the tables or stored procedure files specified in the SQL file loaded have already been loaded the script will fail. If the DDL file specifies Java stored procedures whose classes have not been loaded into the database then the script will fail.
 
-Note that a path to a JAR file containing one or more SQL files can also be specified. In this case the SQL files will be extracted from the JAR file and loaded into the database in the ascending sorted order of their base names.
+Note that a path to a JAR file or ZIP file containing one or more SQL files can also be specified. In this case the SQL files will be extracted from the JAR file and loaded into the database in the ascending sorted order of their base names.
 
 ## Issues / Todo
 
@@ -35,12 +39,12 @@ Note that a path to a JAR file containing one or more SQL files can also be spec
 - No stored procedure class file loading
 - No --help or usage information provided
 - Script output is noisy
-- `loadddl` can load SQL files, but not SQL files stored in .jar files
 
 ## Changelog
 
 v0.1.0 - Initial version, `createclean` only
 v0.2.0 - Basic `loadddl` added
+v0.2.1 - `loadddl` extended to load SQL files stored in jar and zip archives
 
 ## License
 
