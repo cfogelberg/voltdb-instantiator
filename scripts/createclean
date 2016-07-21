@@ -1,11 +1,11 @@
 #!/usr/bin/python
 
-import os
-import sys
-import yaml
 import itertools
-import time
+import os
 import shutil
+import sys
+import time
+import yaml
 
 def validate_command_line_arguments(args):
   '''
