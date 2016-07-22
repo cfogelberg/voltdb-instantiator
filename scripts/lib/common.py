@@ -10,6 +10,8 @@ def load_configuration(dir_path):
     configuration = yaml.load(configure_yaml)
     if not os.path.exists(configuration['voltdb_bindir']):
       raise Exception('Could not find VoltDB bin dir specified: ' + configuration['voltdb_bindir'])
+    if configuration['license_filepath'] and not os.path.isfile(configuration['license_filepath']):
+      raise Exception('License filepath is not a file: ' + configuration['license_filepath'])
     print('Other configuration loaded')
     return configuration
 

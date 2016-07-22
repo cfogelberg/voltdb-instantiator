@@ -37,8 +37,9 @@ def check_thp_disabled():
 
 def kill_db(dir_path):
   deployment_filepath = os.path.join(dir_path, 'deployment.xml')
-  kill_cmd = 'pkill -f ' + deployment_filepath + ' >> {dir_path}/log/createclean.log 2>&1' \
-      .replace('{dir_path}', dir_path) \
+  log_filepath = os.path.join(dir_path, 'log', 'volt.log')
+  kill_cmd = 'pkill -f ' + deployment_filepath + ' >> {log_filepath} 2>&1' \
+      .replace('{log_filepath}', log_filepath) \
       .strip()
   common.__shexec(kill_cmd)
   print('Existing DB, if any, using ' + deployment_filepath + ' killed');
@@ -61,7 +62,7 @@ def start_db_creation(dir_path, other_configuration):
       .replace('{dir_path}', dir_path) \
       .strip()
 
-  prefix = 'nohup env'
+  pref = 'nohup env'
   heap = 'VOLTDB_HEAPMAX=\'{heap}\'' \
     .replace('{heap}', str(other_configuration['voltdb_heapmax'])) \
     .strip()
@@ -70,6 +71,7 @@ def start_db_creation(dir_path, other_configuration):
     .strip()
   binary = os.path.join(other_configuration['voltdb_bindir'], 'voltdb create')
   depl = '--deployment=' + os.path.join(dir_path, 'deployment.xml')
+  lic = '' if not other_configuration['license_filepath'] else '--license=' + other_configuration['license_filepath']
   host = '--host=' + other_configuration['host']
   admin = '--admin=' + str(other_configuration['ports']['admin'])
   client = '--client=' + str(other_configuration['ports']['client'])
@@ -77,16 +79,14 @@ def start_db_creation(dir_path, other_configuration):
   internal = '--internal=' + str(other_configuration['ports']['internal'])
   repl = '--replication=' + str(other_configuration['ports']['replication'])
   zoo = '--zookeeper=' + str(other_configuration['ports']['zookeeper'])
-  suffix = '>> {dir_path}/log/createclean.log 2>&1 &' \
-    .replace('{dir_path}', dir_path) \
-    .strip()
-
-  db_cmd = '{prefix} {heap} {opts} {binary} {depl} {host} {admin} {client} {http} {internal} {repl} {zoo} {suffix}' \
-      .replace('{prefix}', prefix) \
+  suff = '>> ' + os.path.join(dir_path, 'log', 'createclean.log') + ' 2>&1 &'
+  db_cmd = '{pref} {heap} {opts} {binary} {depl} {lic} {host} {admin} {client} {http} {internal} {repl} {zoo} {suff}' \
+      .replace('{pref}', pref) \
       .replace('{heap}', heap) \
       .replace('{opts}', opts) \
       .replace('{binary}', binary) \
       .replace('{depl}', depl) \
+      .replace('{lic}', lic) \
       .replace('{host}', host) \
       .replace('{admin}', admin) \
       .replace('{client}', client) \
@@ -94,7 +94,7 @@ def start_db_creation(dir_path, other_configuration):
       .replace('{internal}', internal) \
       .replace('{repl}', repl) \
       .replace('{zoo}', zoo) \
-      .replace('{suffix}', suffix) \
+      .replace('{suff}', suff) \
       .strip()
   os.chdir(dir_path)
   common.__shexec(mkdir_cmd)
@@ -117,7 +117,7 @@ def wait_for_database_to_start(dir_path, delay):
       print '... Server initialization completed'
       return True
   print(' ... WARNING: DB initialisation does not appear to have completed after ' + str(10 * delay) + ' seconds')
-  print(' ... Please check the {log_filepath') \
+  print(' ... Please check the {log_filepath}') \
       .replace('{log_filepath}', log_filepath) \
       .strip()
   return False
