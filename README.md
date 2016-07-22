@@ -6,7 +6,7 @@ But sometimes you aren't looking to run a 50-node cluster with billions of recor
 
 ## Starting up a database
 
-### Basic, single-host usage
+### How to create a basic, single-host DB
 
 This functionality is implemented by the `createclean` script. Any existing DB in this directory will be deleted. The behaviour is undefined if any other DB is using the same ports. Otherwise, following these steps will create an empty database with your desired configuration on your localhost.
 
@@ -14,6 +14,14 @@ This functionality is implemented by the `createclean` script. Any existing DB i
 2. Copy a configuration XML file from `configurations` to `~/my-temp-db`, renaming the file to `deployment.xml`
 3. Copy and edit `configurations/other-configuration.yaml` to `~/my-temp-db`
 3. Run `scripts/createclean ~/my-temp-db`
+
+## How to create a more complex DB
+
+In general:
+
+1. Specify the deployment.xml and other-configuration.yaml file identically and as appropriate on all relevant hosts
+2. Execute `createclean` on each host, starting with the master host (as specified in the `host` option in  `other-configuration.yaml`)
+3. Execute `loadjar` and `loadddl` as required on any one of the hosts
 
 ## Loading stored procedure .class files into the database
 
@@ -39,6 +47,8 @@ Note that a path to a JAR file or ZIP file containing one or more SQL files can 
 - No stored procedure class file loading
 - No --help or usage information provided
 - Script output is noisy
+- No way to specify a license file
+- SQL statements are not executed in batch mode
 
 ## Changelog
 
