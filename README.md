@@ -47,12 +47,11 @@ Note that a path to a JAR file or ZIP file containing one or more SQL files can 
 
 ## Issues / Todo
 
-- Limited range of configuration examples - full stub and basic/CE only
-- No stored procedure class file loading
-- No --help or usage information provided
-- Script output is noisy
 - No way to specify a license file
+- No --help or usage information provided
+- Limited range of configuration examples - full stub and basic/CE only
 - SQL statements are not executed in batch mode
+- Script output is noisy
 
 ## Changelog
 
