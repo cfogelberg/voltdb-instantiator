@@ -7,5 +7,5 @@
   <httpd enabled="true">
     <jsonapi enabled="true" />
   </httpd>
-  <snapshot frequency="1h" prefix="snapshot-" retain="3" enabled="true" />
+  <snapshot frequency="1h" prefix="snapshot_" retain="3" enabled="true" />
 </deployment>
