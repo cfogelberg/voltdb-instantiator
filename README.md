@@ -47,9 +47,7 @@ Note that a path to a JAR file or ZIP file containing one or more SQL files can 
 
 ## Issues / Todo
 
-- No way to specify a license file
 - No --help or usage information provided
-- Limited range of configuration examples - full stub and basic/CE only
 - SQL statements are not executed in batch mode
 - Script output is noisy
 
