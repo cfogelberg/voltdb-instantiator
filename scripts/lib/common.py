@@ -13,6 +13,21 @@ def load_configuration(dir_path):
     print('Other configuration loaded')
     return configuration
 
+def check_voltdb_is_running(dir_path, other_configuration):
+  '''
+  Attempt to execute a system stored procedure on the VoltDB using the port specified in the YAML configuration file via
+  sqlcmd. Raise an exception if the sqlcmd return code is non-zero.
+  '''
+  check_cmd = 'echo "exec @SystemInformation OVERVIEW" | sqlcmd --port={client} >> {dir_path}/log/loadddl.log' \
+      .replace('{client}', str(other_configuration['ports']['client'])) \
+      .replace('{dir_path}', dir_path) \
+      .strip()
+  os.chdir(dir_path)
+  if __shexec(check_cmd) == 0:
+    print('VoltDB appears to be running normally')
+  else:
+    raise Exception('Error, unable to connect to VoltDB client port')
+
 def __shexec(command, silent=False):
   if not silent:
     print(command)

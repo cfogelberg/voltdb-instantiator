@@ -27,21 +27,6 @@ def validate_command_line_arguments(args):
     raise Exception('Error - source file must be a sql, jar or zip file')
   print('Command line arguments validated')
 
-def check_voltdb_is_running(dir_path, other_configuration):
-  '''
-  Attempt to execute a system stored procedure on the VoltDB using the port specified in the YAML configuration file via
-  sqlcmd. Raise an exception if the sqlcmd return code is non-zero.
-  '''
-  check_cmd = 'echo "exec @SystemInformation OVERVIEW" | sqlcmd --port={client} >> {dir_path}/log/loadddl.log' \
-      .replace('{client}', str(other_configuration['ports']['client'])) \
-      .replace('{dir_path}', dir_path) \
-      .strip()
-  os.chdir(dir_path)
-  if common.__shexec(check_cmd) == 0:
-    print('VoltDB appears to be running normally')
-  else:
-    raise Exception('Error, unable to connect to VoltDB client port')
-
 def apply_source_file(dir_path, source_filepath, other_configuration):
   '''
   Applies a SQL file to a VoltDB via sqlcmd. If a jar or zip file is provided instead it will extract any SQL files
@@ -97,6 +82,6 @@ def __locate(pattern, root=os.curdir):
 if __name__ == '__main__':
   validate_command_line_arguments(sys.argv)
   other_configuration = common.load_configuration(sys.argv[1])
-  check_voltdb_is_running(sys.argv[1], other_configuration)
+  common.check_voltdb_is_running(sys.argv[1], other_configuration)
   apply_source_file(sys.argv[1], sys.argv[2], other_configuration)
 

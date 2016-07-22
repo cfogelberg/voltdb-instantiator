@@ -1,0 +1,46 @@
+#!/usr/bin/python
+
+import lib.common as common
+import os
+import sys
+
+def validate_command_line_arguments(args):
+  '''
+  Check that 2 command line arguments are present and that they both specify valid paths. Raise an exception otherwise
+  '''
+  if len(args) != 3:
+    raise Exception('Error - incorrect number of arguments: 2 expected, ' + str(len(args) - 1) + ' present')
+  if not os.path.isdir(args[1]):
+    raise Exception('Error - path not found: ' + args[1])
+  if not os.path.isfile(os.path.join(args[1], 'deployment.xml')):
+    raise Exception('Error - deployment.xml not found: ' + os.path.join(args[1], 'deployment.xml'))
+  if not os.path.isfile(os.path.join(args[1], 'other-configuration.yaml')):
+    raise Exception('Error - other-configuration.yaml not found: ' + os.path.join(args[1], 'other-configuration.yaml'))
+  if not os.path.isfile(args[2]):
+    raise Exception('Error - could not find JAR file: ' + args[2])
+  (_, ext) = os.path.splitext(args[2])
+  if not ext.lower() in ['.jar']:
+    raise Exception('Error - source file must be a jar file')
+  print('Command line arguments validated')
+
+
+def load_jar_file(dir_path, jar_filepath, other_configuration):
+  log_filepath = os.path.join(dir_path, 'log', 'loadjar.log')
+  apply_cmd = 'sqlcmd --port={client} --query="LOAD CLASSES {jar_filepath};" >> {log_filepath} 2>&1' \
+      .replace('{dir_path}', dir_path) \
+      .replace('{client}', str(other_configuration['ports']['client'])) \
+      .replace('{jar_filepath}', jar_filepath) \
+      .replace('{log_filepath}', log_filepath) \
+      .strip()
+  os.chdir(dir_path)
+  return_code = common.__shexec(apply_cmd)
+  if return_code == 0:
+    print('Loaded ' + jar_filepath + ' into VoltDB')
+  else:
+    raise Exception('Error - could not apply ' + jar_filepath + '; check logs. Error code: ' + str(return_code))
+
+if __name__ == '__main__':
+  validate_command_line_arguments(sys.argv)
+  other_configuration = common.load_configuration(sys.argv[1])
+  common.check_voltdb_is_running(sys.argv[1], other_configuration)
+  load_jar_file(sys.argv[1], sys.argv[2], other_configuration)
