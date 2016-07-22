@@ -1,7 +1,6 @@
 import os
 import yaml
 
-
 def load_configuration(dir_path):
   '''
   Loads the other configuration from {dir_path}/other-configuration.yaml, returning a dict
