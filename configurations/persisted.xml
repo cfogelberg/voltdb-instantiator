@@ -1,0 +1,11 @@
+<deployment>
+  <cluster hostcount="1" sitesperhost="1" kfactor="0" />
+  <commandlog enabled="true" synchronous="false" logsize="10000">
+    <frequency time="" transactions="" />
+  </commandlog>
+  <consistency readlevel="safe" />
+  <httpd enabled="true">
+    <jsonapi enabled="true" />
+  </httpd>
+  <snapshot frequency="1h" prefix="snapshot-" retain="3" enabled="true" />
+</deployment>

@@ -11,3 +11,4 @@ ports:
 voltdb_heapmax: 1024
 voltdb_bindir: /path/to/voltdb/bin
 check_delay: 5
+license_filepath: false
