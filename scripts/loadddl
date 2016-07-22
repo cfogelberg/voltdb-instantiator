@@ -1,11 +1,11 @@
 #!/usr/bin/python
 
+import lib.common as common
 import fnmatch
 import os
 import sys
 import shutil
 import tempfile
-import yaml
 import zipfile
 
 def validate_command_line_arguments(args):
@@ -27,18 +27,6 @@ def validate_command_line_arguments(args):
     raise Exception('Error - source file must be a sql, jar or zip file')
   print('Command line arguments validated')
 
-def load_configuration(dir_path):
-  '''
-  Loads the other configuration from {dir_path}/other-configuration.yaml, returning a dict
-  '''
-  configuration_path = os.path.join(dir_path, 'other-configuration.yaml')
-  with open(configuration_path, 'r') as configure_yaml:
-    configuration = yaml.load(configure_yaml)
-    if not os.path.exists(configuration['voltdb_bindir']):
-      raise Exception('Could not find VoltDB bin dir specified: ' + configuration['voltdb_bindir'])
-    print('Other configuration loaded')
-    return configuration
-
 def check_voltdb_is_running(dir_path, other_configuration):
   '''
   Attempt to execute a system stored procedure on the VoltDB using the port specified in the YAML configuration file via
@@ -49,7 +37,7 @@ def check_voltdb_is_running(dir_path, other_configuration):
       .replace('{dir_path}', dir_path) \
       .strip()
   os.chdir(dir_path)
-  if __shexec(check_cmd) == 0:
+  if common.__shexec(check_cmd) == 0:
     print('VoltDB appears to be running normally')
   else:
     raise Exception('Error, unable to connect to VoltDB client port')
@@ -66,6 +54,7 @@ def apply_source_file(dir_path, source_filepath, other_configuration):
     __apply_jarzip_source_filepath(dir_path, source_filepath, other_configuration)
   else:
     raise Exception('Error - source file must be a sql, jar or zip file')
+  print('All source files applied, DDL load complete')
 
 def __apply_jarzip_source_filepath(dir_path, source_filepath, other_configuration):
   sql_files = []
@@ -88,7 +77,7 @@ def __apply_sql_source_filepath(dir_path, source_filepath, other_configuration):
       .replace('{source_filepath}', source_filepath) \
       .strip()
   os.chdir(dir_path)
-  return_code = __shexec(apply_cmd)
+  return_code = common.__shexec(apply_cmd)
   if return_code == 0:
     print('Applied ' + source_filepath + ' to VoltDB')
   else:
@@ -103,14 +92,9 @@ def __locate(pattern, root=os.curdir):
         for filename in fnmatch.filter(files, pattern):
             yield os.path.join(path, filename)
 
-def __shexec(command, silent=False):
-  if not silent:
-    print(command)
-  return os.system(command)
-
 if __name__ == '__main__':
   validate_command_line_arguments(sys.argv)
-  other_configuration = load_configuration(sys.argv[1])
+  other_configuration = common.load_configuration(sys.argv[1])
   check_voltdb_is_running(sys.argv[1], other_configuration)
   apply_source_file(sys.argv[1], sys.argv[2], other_configuration)
 

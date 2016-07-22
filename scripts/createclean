@@ -1,11 +1,11 @@
 #!/usr/bin/python
 
+import lib.common as common
 import itertools
 import os
 import shutil
 import sys
 import time
-import yaml
 
 def validate_command_line_arguments(args):
   '''
@@ -21,25 +21,13 @@ def validate_command_line_arguments(args):
     raise Exception('Error - other-configuration.yaml not found: ' + os.path.join(args[1], 'other-configuration.yaml'))
   print('Command line arguments validated')
 
-def load_configuration(dir_path):
-  '''
-  Loads the other configuration from {dir_path}/other-configuration.yaml, returning a dict
-  '''
-  configuration_path = os.path.join(dir_path, 'other-configuration.yaml')
-  with open(configuration_path, 'r') as configure_yaml:
-    configuration = yaml.load(configure_yaml)
-    if not os.path.exists(configuration['voltdb_bindir']):
-      raise Exception('Could not find VoltDB bin dir specified: ' + configuration['voltdb_bindir'])
-    print('Other configuration loaded')
-    return configuration
-
 def check_thp_disabled():
   '''
   Check that transparent huge pages are disabled (Volt won't start if they aren't)
   '''
   enabled_cmd = 'grep \'\\[never\\]\' /sys/kernel/mm/transparent_hugepage/enabled > /dev/null'
   defrag_cmd = 'grep \'\\[never\\]\' /sys/kernel/mm/transparent_hugepage/defrag > /dev/null'
-  if __shexec(enabled_cmd, True) != 0 or __shexec(defrag_cmd, True) != 0:
+  if common.__shexec(enabled_cmd, True) != 0 or common.__shexec(defrag_cmd, True) != 0:
     print('Error - THP must be disabled for VoltDB to safely, try running the following commands:')
     print('  sudo bash -c "echo never > /sys/kernel/mm/transparent_hugepage/enabled"')
     print('  sudo bash -c "echo never > /sys/kernel/mm/transparent_hugepage/defrag"')
@@ -52,7 +40,7 @@ def kill_db(dir_path):
   kill_cmd = 'pkill -f ' + deployment_filepath + ' >> {dir_path}/log/createclean.log 2>&1' \
       .replace('{dir_path}', dir_path) \
       .strip()
-  __shexec(kill_cmd)
+  common.__shexec(kill_cmd)
   print('Existing DB, if any, using ' + deployment_filepath + ' killed');
 
 def clear_db_folder(dir_path):
@@ -109,8 +97,8 @@ def start_db_creation(dir_path, other_configuration):
       .replace('{suffix}', suffix) \
       .strip()
   os.chdir(dir_path)
-  __shexec(mkdir_cmd)
-  __shexec(db_cmd)
+  common.__shexec(mkdir_cmd)
+  common.__shexec(db_cmd)
   print('DB startup initiated')
 
 def wait_for_database_to_start(dir_path, delay):
@@ -125,7 +113,7 @@ def wait_for_database_to_start(dir_path, delay):
   for _ in itertools.repeat(None, 10):
     print 'Checking if initialisation has completed...'
     time.sleep(delay)
-    if __shexec(grep_cmd, True) == 0:
+    if common.__shexec(grep_cmd, True) == 0:
       print '... Server initialization completed'
       return True
   print(' ... WARNING: DB initialisation does not appear to have completed after ' + str(10 * delay) + ' seconds')
@@ -134,14 +122,9 @@ def wait_for_database_to_start(dir_path, delay):
       .strip()
   return False
 
-def __shexec(command, silent=False):
-  if not silent:
-    print(command)
-  return os.system(command)
-
 if __name__ == '__main__':
   validate_command_line_arguments(sys.argv)
-  other_configuration = load_configuration(sys.argv[1])
+  other_configuration = common.load_configuration(sys.argv[1])
   check_thp_disabled()
   kill_db(sys.argv[1])
   clear_db_folder(sys.argv[1])
