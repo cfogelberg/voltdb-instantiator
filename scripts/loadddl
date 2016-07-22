@@ -71,17 +71,19 @@ def __apply_jarzip_source_filepath(dir_path, source_filepath, other_configuratio
       __apply_sql_source_filepath(dir_path, sql_file, other_configuration)
 
 def __apply_sql_source_filepath(dir_path, source_filepath, other_configuration):
-  apply_cmd = 'sqlcmd --port={client} < "{source_filepath}" >> {dir_path}/log/loadddl.log 2>&1' \
+  log_filepath = os.path.join(dir_path, 'log', 'loadddl.log')
+  apply_cmd = 'sqlcmd --port={client} < "{source_filepath}" >> {log_filepath} 2>&1' \
       .replace('{dir_path}', dir_path) \
       .replace('{client}', str(other_configuration['ports']['client'])) \
       .replace('{source_filepath}', source_filepath) \
+      .replace('{log_filepath}', log_filepath) \
       .strip()
   os.chdir(dir_path)
   return_code = common.__shexec(apply_cmd)
   if return_code == 0:
     print('Applied ' + source_filepath + ' to VoltDB')
   else:
-    raise Exception('Error - could not apply ' + source_filepath + ' to VoltDB. Error code: ' + str(return_code))
+    raise Exception('Error - could not apply ' + source_filepath + '; check logs. Error code: ' + str(return_code))
 
 def __locate(pattern, root=os.curdir):
     '''
