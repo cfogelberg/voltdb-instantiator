@@ -58,9 +58,7 @@ def start_db_creation(dir_path, other_configuration):
   '''
   Call voltdb create with the appropriate parameters
   '''
-  mkdir_cmd = 'mkdir -p {dir_path}/log' \
-      .replace('{dir_path}', dir_path) \
-      .strip()
+  mkdir_cmd = 'mkdir -p ' + os.path.join(dir_path, 'log')
 
   pref = 'nohup env'
   heap = 'VOLTDB_HEAPMAX=\'{heap}\'' \

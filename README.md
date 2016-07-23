@@ -48,7 +48,7 @@ Note that a path to a JAR file or ZIP file containing one or more SQL files can 
 ## Issues / Todo
 
 - No --help or usage information provided
-- SQL statements are not executed in batch mode
+- Limited error checking / unclear failure (Are ports already being used? Has VoltDB creation failed with a FATAL error?)
 - Script output is noisy
 
 ## Changelog

@@ -57,7 +57,7 @@ def __apply_jarzip_source_filepath(dir_path, source_filepath, other_configuratio
 
 def __apply_sql_source_filepath(dir_path, source_filepath, other_configuration):
   log_filepath = os.path.join(dir_path, 'log', 'loadddl.log')
-  apply_cmd = 'sqlcmd --port={client} < "{source_filepath}" >> {log_filepath} 2>&1' \
+  apply_cmd = 'echo "file -batch {source_filepath}" | sqlcmd --port={client} >> {log_filepath} 2>&1' \
       .replace('{dir_path}', dir_path) \
       .replace('{client}', str(other_configuration['ports']['client'])) \
       .replace('{source_filepath}', source_filepath) \
